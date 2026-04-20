@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Neon Paddle | Arcade</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { background-color: #0f172a; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; color: white; font-family: 'Inter', sans-serif; }
+        canvas { background: #1e293b; border: 2px solid #334155; border-radius: 12px; box-shadow: 0 0 30px rgba(99, 102, 241, 0.2); cursor: crosshair; }
+        .ui { margin-bottom: 1rem; text-transform: uppercase; letter-spacing: 0.2em; color: #818cf8; font-weight: 700; }
+    </style>
+</head>
+<body>
+
+    <div class="ui">Score: <span id="score">0</span></div>
+    <canvas id="pongCanvas" width="700" height="400"></canvas>
+    <div class="mt-6 text-slate-500 text-xs tracking-widest uppercase">Move mouse to defend the goal</div>
+
+    <script>
+        const canvas = document.getElementById("pongCanvas");
+        const ctx = canvas.getContext("2d");
+        const scoreDisplay = document.getElementById("score");
+
+        let score = 0;
+        
+        // Ball setup
+        const ball = {
+            x: canvas.width / 2,
+            y: canvas.height / 2,
+            radius: 8,
+            speed: 5,
+            dx: 5,
+            dy: 5,
+            color: "#818cf8"
+        };
+
+        // Paddle setup
+        const paddle = {
+            width: 12,
+            height: 80,
+            y: canvas.height / 2 - 40,
+            x: canvas.width - 25,
+            color: "#ffffff"
+        };
+
+        // Handle Mouse Movement
+        canvas.addEventListener("mousemove", (e) => {
+            let rect = canvas.getBoundingClientRect();
+            paddle.y = e.clientY - rect.top - paddle.height / 2;
+            
+            // Keep paddle inside canvas
+            if (paddle.y < 0) paddle.y = 0;
+            if (paddle.y > canvas.height - paddle.height) paddle.y = canvas.height - paddle.height;
+        });
+
+        function resetBall() {
+            ball.x = canvas.width / 2;
+            ball.y = canvas.height / 2;
+            ball.speed = 5;
+            ball.dx = -ball.dx;
+        }
+
+        function update() {
+            ball.x += ball.dx;
+            ball.y += ball.dy;
+
+            // Top and Bottom wall collision
+            if (ball.y + ball.radius > canvas.height || ball.y - ball.radius < 0) {
+                ball.dy *= -1;
+            }
+
+            // Left wall collision (Auto-bounce for solo play)
+            if (ball.x - ball.radius < 0) {
+                ball.dx *= -1;
+            }
+
+            // Paddle collision
+            if (
+                ball.x + ball.radius > paddle.x &&
+                ball.y > paddle.y &&
+                ball.y < paddle.y + paddle.height
+            ) {
+                ball.dx = -Math.abs(ball.dx); // Bounce back left
+                ball.speed += 0.2; // Increase difficulty
+                score++;
+                scoreDisplay.innerText = score;
+            }
+
+            // Score check (if ball passes paddle)
+            if (ball.x > canvas.width) {
+                score = 0;
+                scoreDisplay.innerText = score;
+                resetBall();
+            }
+        }
+
+        function draw() {
+            // Clear Canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Draw Ball
+            ctx.beginPath();
+            ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
+            ctx.fillStyle = ball.color;
+            ctx.fill();
+            ctx.closePath();
+
+            // Draw Paddle
+            ctx.fillStyle = paddle.color;
+            ctx.fillRect(paddle.x, paddle.y, paddle.width, paddle.height);
+
+            // Center Line
+            ctx.setLineDash([5, 15]);
+            ctx.beginPath();
+            ctx.moveTo(canvas.width / 2, 0);
+            ctx.lineTo(canvas.width / 2, canvas.height);
+            ctx.strokeStyle = "#334155";
+            ctx.stroke();
+        }
+
+        function loop() {
+            update();
+            draw();
+            requestAnimationFrame(loop);
+        }
+
+        loop();
+    </script>
+</body>
+</html>
